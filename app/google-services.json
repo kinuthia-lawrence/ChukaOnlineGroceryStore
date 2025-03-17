@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "242117327306",
+    "project_id": "chukaonlicerystore",
+    "storage_bucket": "chukaonlicerystore.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:242117327306:android:f6f19dc1847375947f3733",
+        "android_client_info": {
+          "package_name": "com.example.chukaonlinegrocerystore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDnfJ5nrzaidaIzDL9_BYElnQCcdQYU28"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

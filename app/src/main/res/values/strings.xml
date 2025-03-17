@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Chuka Online Grocery Store</string>
+    <string name="apple_image_desc">Image of an apple</string>
+    <string name="search_products">Search products...</string>
+    <string name="product_name">Product Name</string>
+    <string name="ksh_0_00">Ksh 0.00</string>
+    <string name="product_image">Product Image</string>
+</resources>
