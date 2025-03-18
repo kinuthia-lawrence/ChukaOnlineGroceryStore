@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -24,8 +25,9 @@ fun AuthScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Continue as:",
+            text = "Continue as",
             fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.headlineMedium
         )

@@ -1,5 +1,6 @@
 package com.example.chukaonlinegrocerystore.ui.auth
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,8 +39,66 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
     var isLoading by remember { mutableStateOf(false) }
 
     val role = if (userType == "BUYER") Role.BUYER else Role.SELLER
-
     val context = LocalContext.current
+
+    fun clearFieldsAndNavigate() {
+        email = ""
+        password = ""
+        confirmPassword = ""
+        name = ""
+        address = ""
+        phone = ""
+        storeName = ""
+        storeAddress = ""
+        storePhoneNumber = ""
+        paymentMethods = ""
+        products = ""
+        errorMessage = ""
+        Toast.makeText(context, "Registration successful", Toast.LENGTH_SHORT).show()
+        navController.navigate("login/$userType") {
+            popUpTo("register") { inclusive = true }
+        }
+    }
+    fun saveBuyerData(firestore: FirebaseFirestore, uid: String) {
+        val buyerData = mapOf(
+            "address" to address,
+            "phone" to phone,
+            "paymentMethods" to paymentMethods.split(",").map { it.trim() }
+        )
+
+        Log.d("REGISTRATION", "Saving buyer data")
+        firestore.collection("buyers").document(uid)
+            .set(buyerData)
+            .addOnSuccessListener {
+                Log.d("REGISTRATION", "Buyer data saved successfully")
+                clearFieldsAndNavigate()
+            }
+            .addOnFailureListener { e ->
+                Log.e("REGISTRATION", "Failed to save buyer data", e)
+                errorMessage = "Failed to save buyer data: ${e.message}"
+            }
+    }
+
+    fun saveSellerData(firestore: FirebaseFirestore, uid: String) {
+        val sellerData = mapOf(
+            "storeName" to storeName,
+            "storeAddress" to storeAddress,
+            "storePhoneNumber" to storePhoneNumber,
+            "products" to products.split(",").map { Product(name = it.trim()) }
+        )
+
+        Log.d("REGISTRATION", "Saving seller data")
+        firestore.collection("sellers").document(uid)
+            .set(sellerData)
+            .addOnSuccessListener {
+                Log.d("REGISTRATION", "Seller data saved successfully")
+                clearFieldsAndNavigate()
+            }
+            .addOnFailureListener { e ->
+                Log.e("REGISTRATION", "Failed to save seller data", e)
+                errorMessage = "Failed to save seller data: ${e.message}"
+            }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -205,12 +264,16 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
                         errorMessage = "All fields are required"
                         return@Button
                     }
+
                     isLoading = true
+                    Log.d("REGISTRATION", "Starting registration process for $email")
+
                     val auth = FirebaseAuth.getInstance()
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
                             isLoading = false
                             if (task.isSuccessful) {
+                                Log.d("REGISTRATION", "Auth created successfully")
                                 val uid = task.result?.user?.uid
                                 if (uid != null) {
                                     val firestore = FirebaseFirestore.getInstance()
@@ -219,56 +282,34 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
                                         "email" to email,
                                         "role" to role.name
                                     )
+
+                                    Log.d("REGISTRATION", "Saving user data for $uid")
                                     firestore.collection("users").document(uid)
                                         .set(userData)
                                         .addOnSuccessListener {
-                                            if (role == Role.BUYER) {
-                                                val buyerData = mapOf(
-                                                    "address" to address,
-                                                    "phone" to phone,
-                                                    "paymentMethods" to paymentMethods.split(",")
-                                                        .map { it.trim() }
-                                                )
-                                                firestore.collection("buyers").document(uid)
-                                                    .set(buyerData)
-                                            } else {
-                                                val sellerData = mapOf(
-                                                    "storeName" to storeName,
-                                                    "storeAddress" to storeAddress,
-                                                    "storePhoneNumber" to storePhoneNumber,
-                                                    "products" to products.split(",")
-                                                        .map { Product(name = it.trim()) }
-                                                )
-                                                firestore.collection("sellers").document(uid)
-                                                    .set(sellerData)
-                                            }
-                                            // Clear all fields
-                                            email = ""
-                                            password = ""
-                                            confirmPassword = ""
-                                            name = ""
-                                            address = ""
-                                            phone = ""
-                                            storeName = ""
-                                            storeAddress = ""
-                                            storePhoneNumber = ""
-                                            paymentMethods = ""
-                                            products = ""
-                                            errorMessage = ""
-                                            Toast.makeText(
-                                                context,
-                                                "Registration successful",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                            navController.navigate("login/$userType") {
-                                                popUpTo("register") { inclusive = true }
+                                            Log.d("REGISTRATION", "User data saved successfully")
+
+                                            try {
+                                                // Run on UI thread to ensure UI operations work
+                                                (context as? android.app.Activity)?.runOnUiThread {
+                                                    if (role == Role.BUYER) {
+                                                        saveBuyerData(firestore, uid)
+                                                    } else {
+                                                        saveSellerData(firestore, uid)
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                Log.e("REGISTRATION", "UI thread error: ${e.message}", e)
+                                                errorMessage = "UI error: ${e.message}"
                                             }
                                         }
                                         .addOnFailureListener { e ->
+                                            Log.e("REGISTRATION", "Failed to save user data", e)
                                             errorMessage = "Failed to save user data: ${e.message}"
                                         }
                                 }
                             } else {
+                                Log.e("REGISTRATION", "Auth failed: ${task.exception?.message}")
                                 errorMessage = task.exception?.message ?: "Registration failed"
                             }
                         }
@@ -289,4 +330,5 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
             }
         }
     }
+
 }
