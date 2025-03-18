@@ -1,9 +1,11 @@
 package com.example.chukaonlinegrocerystore.ui.auth
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
@@ -57,13 +59,14 @@ fun LoginScreen(navController: NavHostController, userType: String) {
                             }
                         } else {
                             errorMessage = task.exception?.message ?: "Login failed"
+                            Log.d("LoginError", task.exception.toString())
                         }
                     }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Green)
             } else {
                 Text("Login")
             }
