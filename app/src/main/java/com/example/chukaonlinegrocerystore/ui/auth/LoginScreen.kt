@@ -10,7 +10,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavHostController) {
+fun LoginScreen(navController: NavHostController, userType: String) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -23,7 +23,7 @@ fun LoginScreen(navController: NavHostController) {
             .padding(16.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Login", style = MaterialTheme.typography.headlineMedium)
+        Text("Login as $userType", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = email,
@@ -51,9 +51,8 @@ fun LoginScreen(navController: NavHostController) {
                     .addOnCompleteListener { task ->
                         isLoading = false
                         if (task.isSuccessful) {
-                            // For simplicity, assume role "buyer" if role retrieval is not implemented.
-                            // In a real scenario, you would read the user's role from Firestore.
-                            navController.navigate("buyer_dashboard") {
+                            val destination = if (userType == "buyer") "buyer_dashboard" else "seller_dashboard"
+                            navController.navigate(destination) {
                                 popUpTo("login") { inclusive = true }
                             }
                         } else {

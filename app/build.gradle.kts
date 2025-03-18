@@ -65,7 +65,7 @@ dependencies {
     implementation(libs.androidx.activity.compose.v172)
     implementation(libs.ui)
     implementation(libs.ui.tooling.preview)
-    implementation(libs.material3)
+//    implementation(libs.material3)
     implementation(libs.androidx.navigation.compose)
 
     // RecyclerView (if you need it in other parts of your app)

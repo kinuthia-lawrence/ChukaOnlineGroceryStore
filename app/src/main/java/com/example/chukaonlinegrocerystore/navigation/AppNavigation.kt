@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.chukaonlinegrocerystore.ui.AuthScreen
 import com.example.chukaonlinegrocerystore.ui.auth.LoginScreen
 import com.example.chukaonlinegrocerystore.ui.auth.RegistrationScreen
 import com.example.chukaonlinegrocerystore.ui.BuyerDashboard
@@ -21,10 +22,14 @@ fun AppNavigation(navController: NavHostController) {
     // Create/remember a single CartViewModel instance to share between buyer-related screens
     val cartViewModel: CartViewModel = viewModel()
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = "auth") {
         // Authentication Screens
-        composable("login") {
-            LoginScreen(navController)
+        composable("auth") {
+            AuthScreen(navController)
+        }
+        composable("login/{userType}") { backStackEntry ->
+            val userType = backStackEntry.arguments?.getString("userType") ?: "buyer"
+            LoginScreen(navController, userType)
         }
         composable("register") {
             RegistrationScreen(navController)

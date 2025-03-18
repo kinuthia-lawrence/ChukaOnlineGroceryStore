@@ -25,7 +25,7 @@ fun ProductItem(product: Product, cartViewModel: CartViewModel) {
         ) {
             // Product Image
             Image(
-                painter = painterResource(id = product.image),
+                painter = painterResource(id = product.imageResId),
                 contentDescription = product.name,
                 modifier = Modifier.size(64.dp)
             )

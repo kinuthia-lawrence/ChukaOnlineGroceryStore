@@ -33,16 +33,19 @@ fun BuyerDashboard(
 
     // Sample product list
     val products = listOf(
-        Product("1", "Apple", 1.99, R.drawable.apple, "Fruits"),
-        Product("2", "Banana", 0.99, R.drawable.banana, "Fruits"),
-        Product("3", "Carrot", 1.49, R.drawable.carrot, "Vegetables"),
-        Product("4", "Milk", 2.49, R.drawable.milk, "Dairy"),
-        Product("5", "Juice", 3.99, R.drawable.juice, "Beverages")
+        Product("1", "Apple", 1.99, "Fruits", 5, R.drawable.apple),
+        Product("2", "Banana", 0.99, "Fruits", 5, R.drawable.banana),
+        Product("3", "Carrot", 1.49, "Vegetables", 5, R.drawable.carrot),
+        Product("4", "Milk", 2.49, "Dairy", 5, R.drawable.milk),
+        Product("5", "Juice", 3.99, "Beverages", 5, R.drawable.juice)
     )
 
     // Filter logic
     val filteredProducts = products.filter { product ->
-        (selectedCategory.isEmpty() || product.category.equals(selectedCategory, ignoreCase = true)) &&
+        (selectedCategory.isEmpty() || product.category.equals(
+            selectedCategory,
+            ignoreCase = true
+        )) &&
                 (searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true))
     }
 
