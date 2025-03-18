@@ -33,7 +33,7 @@ fun AuthScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { navController.navigate("login/buyer") },
+            onClick = { navController.navigate("login/BUYER") },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
@@ -46,7 +46,7 @@ fun AuthScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(10.dp))
 
         Button(
-            onClick = { navController.navigate("login/seller") },
+            onClick = { navController.navigate("login/SELLER") },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),

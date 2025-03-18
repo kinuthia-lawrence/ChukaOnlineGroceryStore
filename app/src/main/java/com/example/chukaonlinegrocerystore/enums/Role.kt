@@ -1,6 +1,6 @@
 package com.example.chukaonlinegrocerystore.enums
 
-enum class users {
+enum class Role {
     SELLER,
     BUYER
 }

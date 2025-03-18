@@ -1,10 +1,14 @@
 package com.example.chukaonlinegrocerystore.model
 
+import com.example.chukaonlinegrocerystore.enums.Role
+
+
 data class User(
     val id: String = "",
     val name: String = "",
     val email: String = "",
-    val password: String = ""
+    val password: String = "",
+    val role: Role
 )
 
 data class Buyer(

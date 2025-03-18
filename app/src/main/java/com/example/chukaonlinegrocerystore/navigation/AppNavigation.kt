@@ -31,8 +31,9 @@ fun AppNavigation(navController: NavHostController) {
             val userType = backStackEntry.arguments?.getString("userType") ?: "buyer"
             LoginScreen(navController, userType)
         }
-        composable("register") {
-            RegistrationScreen(navController)
+        composable("register/{userType}") { backStackEntry ->
+            val userType = backStackEntry.arguments?.getString("userType") ?: "buyer"
+            RegistrationScreen(navController, userType)
         }
         // Buyer Dashboard: Navigated to after login as buyer
         composable("buyer_dashboard") {
