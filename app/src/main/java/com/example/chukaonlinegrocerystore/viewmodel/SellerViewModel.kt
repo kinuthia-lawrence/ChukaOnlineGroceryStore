@@ -83,7 +83,7 @@ class SellerViewModel : ViewModel() {
 
     // Adds a new product to the seller's inventory in Firestore.
     // In production, you should add error handling and input validation.
-    suspend fun addOrUpdateProduct() {
+    suspend fun addOrUpdateProduct(imageUrl: imageUrl) {
         val name = _uiState.value.productName
         val price = _uiState.value.productPrice.toDoubleOrNull() ?: 0.0
         val category = _uiState.value.productCategory
