@@ -1,5 +1,12 @@
 package com.example.chukaonlinegrocerystore.viewmodel
 
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -18,18 +25,36 @@ data class SellerUiState(
 )
 
 class SellerViewModel : ViewModel() {
+    /*TODO
+    * Include Image in sellers
+    * Show products in Buyers
+    * */
+
+    private val _productToDelete = MutableStateFlow<Product?>(null)
+    val productToDelete: StateFlow<Product?> = _productToDelete
+
+    private val _productToEdit = MutableStateFlow<Product?>(null)
+    val productToEdit: StateFlow<Product?> = _productToEdit
+
+    fun setProductToDelete(product: Product?) {
+        _productToDelete.value = product
+    }
+
+    fun setProductToEdit(product: Product?) {
+        _productToEdit.value = product
+    }
 
     private val _uiState = MutableStateFlow(SellerUiState())
     val uiState: StateFlow<SellerUiState> = _uiState
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    // For development/testing, if no user is logged in, we use a test UID.
-    // In production, the current user's UID will be non-null.
-    private val sellerUid: String? = auth.currentUser?.uid ?: "testSeller"
+
+    private val sellerUid: String? = auth.currentUser?.uid
 
     init {
         observeSellerInventory()
+//        Log.d("SellerViewModel", "sellerUid:: $sellerUid")
     }
 
     private fun observeSellerInventory() {
@@ -40,6 +65,7 @@ class SellerViewModel : ViewModel() {
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         // Log or handle the error appropriately.
+                        Log.d("SellerViewModel", "Error encountered $error")
                         return@addSnapshotListener
                     }
                     snapshot?.let {
@@ -83,7 +109,7 @@ class SellerViewModel : ViewModel() {
 
     // Adds a new product to the seller's inventory in Firestore.
     // In production, you should add error handling and input validation.
-    suspend fun addOrUpdateProduct(imageUrl: imageUrl) {
+    suspend fun addProduct(imageUrl: String?, context: Context) {
         val name = _uiState.value.productName
         val price = _uiState.value.productPrice.toDoubleOrNull() ?: 0.0
         val category = _uiState.value.productCategory
@@ -105,6 +131,34 @@ class SellerViewModel : ViewModel() {
             .await()
 
         clearFields()
+        Toast.makeText(context, "Product added successfully", Toast.LENGTH_SHORT).show()
+    }
+
+    suspend fun updateProduct(product: Product, context: Context) {
+        val name = _uiState.value.productName
+        val price = _uiState.value.productPrice.toDoubleOrNull() ?: 0.0
+        val category = _uiState.value.productCategory
+        val quantity = _uiState.value.productQuantity.toIntOrNull() ?: 0
+
+        if (sellerUid == null) return
+
+        val productData = mapOf(
+            "name" to name,
+            "price" to price,
+            "category" to category,
+            "quantity" to quantity
+        )
+
+        firestore.collection("users")
+            .document(sellerUid)
+            .collection("inventory")
+            .document(product.id)
+            .update(productData)
+            .await()
+
+        clearFields()
+        Toast.makeText(context, "Product updated successfully", Toast.LENGTH_SHORT).show()
+        setProductToEdit(null)
     }
 
     // Deletes a product from the seller's inventory.

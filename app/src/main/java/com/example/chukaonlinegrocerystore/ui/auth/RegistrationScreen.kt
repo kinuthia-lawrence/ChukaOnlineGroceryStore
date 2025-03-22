@@ -16,7 +16,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.chukaonlinegrocerystore.enums.Role
-import com.example.chukaonlinegrocerystore.model.Product
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Locale
@@ -34,7 +33,6 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
     var storeAddress by remember { mutableStateOf("") }
     var storePhoneNumber by remember { mutableStateOf("") }
     var paymentMethods by remember { mutableStateOf("") }
-    var products by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
@@ -52,7 +50,6 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
         storeAddress = ""
         storePhoneNumber = ""
         paymentMethods = ""
-        products = ""
         errorMessage = ""
         Toast.makeText(context, "Registration successful", Toast.LENGTH_SHORT).show()
         navController.navigate("login/$userType") {
@@ -83,8 +80,7 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
         val sellerData = mapOf(
             "storeName" to storeName,
             "storeAddress" to storeAddress,
-            "storePhoneNumber" to storePhoneNumber,
-            "products" to products.split(",").map { Product(name = it.trim()) }
+            "storePhoneNumber" to storePhoneNumber
         )
 
         Log.d("REGISTRATION", "Saving seller data")
@@ -227,15 +223,6 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
-            item {
-                OutlinedTextField(
-                    value = products,
-                    onValueChange = { products = it },
-                    label = { Text("Products (comma separated)") },
-                    shape = RoundedCornerShape(30),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
         }
         item {
             Spacer(modifier = Modifier.height(16.dp))
@@ -259,7 +246,7 @@ fun RegistrationScreen(navController: NavHostController, userType: String) {
                     //check if any field is empty
                     if (email.isEmpty() || password.isEmpty() || name.isEmpty() ||
                         (role == Role.BUYER && (address.isEmpty() || phone.isEmpty() || paymentMethods.isEmpty())) ||
-                        (role == Role.SELLER && (storeName.isEmpty() || storeAddress.isEmpty() || storePhoneNumber.isEmpty() || products.isEmpty()))
+                        (role == Role.SELLER && (storeName.isEmpty() || storeAddress.isEmpty() || storePhoneNumber.isEmpty()))
                     ) {
                         errorMessage = "All fields are required"
                         return@Button

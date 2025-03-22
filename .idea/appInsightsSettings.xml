@@ -9,9 +9,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.chukaonlinegrocerystore" />
-                  <option name="mobileSdkAppId" value="1:242117327306:android:f6f19dc1847375947f3733" />
-                  <option name="projectId" value="chukaonlicerystore" />
-                  <option name="projectNumber" value="242117327306" />
+                  <option name="mobileSdkAppId" value="1:765446879253:android:3c8bef80fdbdcf8ea1b61c" />
+                  <option name="projectId" value="chuka-online-grocery" />
+                  <option name="projectNumber" value="765446879253" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

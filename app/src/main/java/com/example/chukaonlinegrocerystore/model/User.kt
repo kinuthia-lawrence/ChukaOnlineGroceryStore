@@ -15,7 +15,7 @@ data class Buyer(
     val user: User,
     val address: String = "",
     val phone: String = "",
-    val paymentMethods: List<String> = emptyList()
+//    val paymentMethods: List<String> = emptyList()
 )
 
 data class Seller(
@@ -23,5 +23,4 @@ data class Seller(
     val storeName: String = "",
     val storeAddress: String = "",
     val storePhoneNumber: String = "",
-    val products: List<Product> = emptyList()
 )

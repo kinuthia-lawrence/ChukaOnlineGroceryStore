@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,11 @@ fun LoginScreen(navController: NavHostController, userType: String) {
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { email = run {
+                it.trim().
+                lowercase(Locale.ROOT)
+            }
+            },
             label = { Text("Email") },
             shape = RoundedCornerShape(30),
             modifier = Modifier.fillMaxWidth()
