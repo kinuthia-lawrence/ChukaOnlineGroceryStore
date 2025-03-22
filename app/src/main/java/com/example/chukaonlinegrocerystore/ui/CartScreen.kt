@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.navigation.NavHostController
 
@@ -29,7 +30,7 @@ fun CartScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { /* Handle checkout action */ }) {
-                Icon(Icons.Filled.ShoppingCart, contentDescription = "Checkout")
+                Icon(Icons.Filled.Done, contentDescription = "Checkout")
             }
         }
     ) { paddingValues ->

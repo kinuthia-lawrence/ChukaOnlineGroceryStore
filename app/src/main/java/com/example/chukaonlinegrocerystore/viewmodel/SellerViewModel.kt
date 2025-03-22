@@ -8,9 +8,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.chukaonlinegrocerystore.enums.ProductCategory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.chukaonlinegrocerystore.model.Product
+import com.example.chukaonlinegrocerystore.ui.ProductItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -19,7 +21,7 @@ import kotlinx.coroutines.tasks.await
 data class SellerUiState(
     val productName: String = "",
     val productPrice: String = "",
-    val productCategory: String = "",
+    var productCategory: ProductCategory = ProductCategory.FRUITS,
     val productQuantity: String = "",
     val sellerProducts: List<Product> = emptyList()
 )
@@ -59,7 +61,7 @@ class SellerViewModel : ViewModel() {
 
     private fun observeSellerInventory() {
         sellerUid?.let { uid ->
-            firestore.collection("users")
+            firestore.collection("sellers")
                 .document(uid)
                 .collection("inventory")
                 .addSnapshotListener { snapshot, error ->
@@ -88,7 +90,7 @@ class SellerViewModel : ViewModel() {
         _uiState.update { it.copy(productPrice = price) }
     }
 
-    fun onProductCategoryChanged(category: String) {
+    fun onProductCategoryChanged(category: ProductCategory) {
         _uiState.update { it.copy(productCategory = category) }
     }
 
@@ -101,7 +103,7 @@ class SellerViewModel : ViewModel() {
             it.copy(
                 productName = "",
                 productPrice = "",
-                productCategory = "",
+                productCategory = ProductCategory.FRUITS,
                 productQuantity = ""
             )
         }
@@ -124,7 +126,7 @@ class SellerViewModel : ViewModel() {
             "quantity" to quantity
         )
 
-        firestore.collection("users")
+        firestore.collection("sellers")
             .document(sellerUid)
             .collection("inventory")
             .add(productData)
@@ -149,7 +151,7 @@ class SellerViewModel : ViewModel() {
             "quantity" to quantity
         )
 
-        firestore.collection("users")
+        firestore.collection("sellers")
             .document(sellerUid)
             .collection("inventory")
             .document(product.id)
@@ -164,7 +166,7 @@ class SellerViewModel : ViewModel() {
     // Deletes a product from the seller's inventory.
     suspend fun deleteProduct(product: Product) {
         if (sellerUid == null) return
-        firestore.collection("users")
+        firestore.collection("sellers")
             .document(sellerUid)
             .collection("inventory")
             .document(product.id)

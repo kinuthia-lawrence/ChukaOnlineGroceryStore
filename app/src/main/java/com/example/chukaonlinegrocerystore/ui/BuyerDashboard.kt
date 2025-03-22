@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,43 +21,42 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import com.example.chukaonlinegrocerystore.enums.ProductCategory
 import com.example.chukaonlinegrocerystore.ui.ProductItem
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BuyerDashboard(
     navController: NavHostController,
     cartViewModel: CartViewModel = viewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<ProductCategory?>(null) }
 
     // Sample product list
     val products = listOf(
-        Product("1", "Apple", 1.99, "Fruits", 5, R.drawable.apple),
-        Product("2", "Banana", 0.99, "Fruits", 5, R.drawable.banana),
-        Product("3", "Carrot", 1.49, "Vegetables", 5, R.drawable.carrot),
-        Product("4", "Milk", 2.49, "Dairy", 5, R.drawable.milk),
-        Product("5", "Juice", 3.99, "Beverages", 5, R.drawable.juice)
+        Product("1", "Apple", 1.99, ProductCategory.FRUITS, 5, R.drawable.apple),
+        Product("2", "Banana", 0.99, ProductCategory.FRUITS, 5, R.drawable.banana),
+        Product("3", "Carrot", 1.49, ProductCategory.VEGETABLES, 5, R.drawable.carrot),
+        Product("4", "Milk", 2.49, ProductCategory.DAIRY, 5, R.drawable.milk),
+        Product("5", "Juice", 3.99, ProductCategory.BEVERAGES, 5, R.drawable.juice)
     )
 
     // Filter logic
     val filteredProducts = products.filter { product ->
-        (selectedCategory.isEmpty() || product.category.equals(
-            selectedCategory,
-            ignoreCase = true
-        )) &&
+        (selectedCategory == null || product.category == selectedCategory) &&
                 (searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true))
     }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate("cart_screen") }
+                onClick = { navController.navigate("cart_screen") },
+                modifier = Modifier.size(56.dp)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_cart),
-                    contentDescription = "Cart"
+                    contentDescription = "Cart",
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -71,6 +71,7 @@ fun BuyerDashboard(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = { Text("Search") },
+                shape = RoundedCornerShape(30.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -80,12 +81,32 @@ fun BuyerDashboard(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // "All" means reset to empty category
-                FilterButton("All", selectedCategory) { selectedCategory = "" }
-                FilterButton("Fruits", selectedCategory) { selectedCategory = "Fruits" }
-                FilterButton("Vegetables", selectedCategory) { selectedCategory = "Vegetables" }
-                FilterButton("Dairy", selectedCategory) { selectedCategory = "Dairy" }
-                FilterButton("Beverages", selectedCategory) { selectedCategory = "Beverages" }
+                // "All" resets category to null
+                FilterButton("All", selectedCategory == null) { selectedCategory = null }
+                FilterButton(
+                    ProductCategory.FRUITS.name,
+                    selectedCategory == ProductCategory.FRUITS
+                ) {
+                    selectedCategory = ProductCategory.FRUITS
+                }
+                FilterButton(
+                    ProductCategory.VEGETABLES.name,
+                    selectedCategory == ProductCategory.VEGETABLES
+                ) {
+                    selectedCategory = ProductCategory.VEGETABLES
+                }
+                FilterButton(
+                    ProductCategory.DAIRY.name,
+                    selectedCategory == ProductCategory.DAIRY
+                ) {
+                    selectedCategory = ProductCategory.DAIRY
+                }
+                FilterButton(
+                    ProductCategory.BEVERAGES.name,
+                    selectedCategory == ProductCategory.BEVERAGES
+                ) {
+                    selectedCategory = ProductCategory.BEVERAGES
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -102,11 +123,9 @@ fun BuyerDashboard(
 @Composable
 fun FilterButton(
     category: String,
-    selectedCategory: String,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val isSelected = (category == "All" && selectedCategory.isEmpty()) ||
-            category.equals(selectedCategory, ignoreCase = true)
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(

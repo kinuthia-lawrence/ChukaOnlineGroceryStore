@@ -1,5 +1,7 @@
 package com.example.chukaonlinegrocerystore.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,15 +11,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,6 +39,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.chukaonlinegrocerystore.R
+import com.example.chukaonlinegrocerystore.enums.ProductCategory
 import com.example.chukaonlinegrocerystore.model.Product
 import com.example.chukaonlinegrocerystore.viewmodel.SellerViewModel
 import kotlinx.coroutines.launch
@@ -55,7 +69,7 @@ fun SellerDashboard(
     sellerViewModel: SellerViewModel = viewModel()
 ) {
 
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Inventory", "Add Product")
 
     val uiState by sellerViewModel.uiState.collectAsState()
@@ -135,6 +149,7 @@ fun SellerDashboard(
                     value = uiState.productName,
                     onValueChange = { sellerViewModel.onProductNameChanged(it) },
                     label = { Text("Product Name") },
+                    shape = RoundedCornerShape(30),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -142,24 +157,26 @@ fun SellerDashboard(
                     value = uiState.productPrice,
                     onValueChange = { sellerViewModel.onProductPriceChanged(it) },
                     label = { Text("Price") },
+                    shape = RoundedCornerShape(30),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = uiState.productCategory,
-                    onValueChange = { sellerViewModel.onProductCategoryChanged(it) },
-                    label = { Text("Category") },
-                    modifier = Modifier.fillMaxWidth()
+                CategoryDropdown(
+                    selectedCategory = uiState.productCategory,
+                    onCategorySelected = { sellerViewModel.onProductCategoryChanged(it) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = uiState.productQuantity,
                     onValueChange = { sellerViewModel.onProductQuantityChanged(it) },
                     label = { Text("Quantity") },
+                    shape = RoundedCornerShape(30),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Button(onClick = {
                         coroutineScope.launch {
                             productToEdit?.let { product ->
@@ -169,10 +186,13 @@ fun SellerDashboard(
                                 context
                             ) // Add new product if null
                         }
-                    }) {
+                    }, modifier = Modifier.weight(1f)) {
                         Text(text = if (productToEdit == null) "Add" else "Update")
                     }
-                    Button(onClick = { sellerViewModel.clearFields() }) {
+                    Button(
+                        onClick = { sellerViewModel.clearFields() },
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Text("Clear")
                     }
                 }
@@ -281,31 +301,95 @@ fun SellerProductItem(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.bodyLarge
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Product Image
+            Image(
+                painter = painterResource(id = product.imageResId.takeIf { it != 0 } ?: R.drawable.groceries),
+                contentDescription = product.name,
+                modifier = Modifier.size(64.dp)
             )
-            Text(
-                text = "Price: Ksh ${product.price} | Qty: ${product.quantity}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Category: ${product.category}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onEditClick) {
-                    Text("Edit")
-                }
-                OutlinedButton(onClick = onDeleteClick) {
-                    Text("Delete")
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier
+                .weight(1f)) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Price: Ksh ${product.price} | Qty: ${product.quantity}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Category: ${product.category}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onEditClick) {
+                        Text("Edit")
+                    }
+                    OutlinedButton(onClick = onDeleteClick) {
+                        Text("Delete")
+                    }
                 }
             }
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategoryDropdown(
+    selectedCategory: ProductCategory, // Enum type
+    onCategorySelected: (ProductCategory) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = selectedCategory.name, // Show selected category
+            onValueChange = {}, // Read-only field
+            readOnly = true,
+            label = { Text("Category") },
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(), // Anchor for dropdown
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Dropdown Icon",
+                    modifier = Modifier.clickable { expanded = true }
+                )
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            ProductCategory.values().forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category.name) },
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable
