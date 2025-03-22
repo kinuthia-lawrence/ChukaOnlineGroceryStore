@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.chukaonlinegrocerystore.R
 import com.example.chukaonlinegrocerystore.model.Product
 import com.example.chukaonlinegrocerystore.viewmodel.CartViewModel
 
@@ -25,7 +26,7 @@ fun ProductItem(product: Product, cartViewModel: CartViewModel) {
         ) {
             // Product Image
             Image(
-                painter = painterResource(id = product.imageResId),
+                painter = painterResource(id = product.imageResId.takeIf { it != 0 } ?: R.drawable.groceries),
                 contentDescription = product.name,
                 modifier = Modifier.size(64.dp)
             )

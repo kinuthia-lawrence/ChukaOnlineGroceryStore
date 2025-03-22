@@ -27,12 +27,7 @@ data class SellerUiState(
 )
 
 class SellerViewModel : ViewModel() {
-    /*TODO
-    * Include Image in sellers
-    * Show products in Buyers
-    * */
-
-    private val _productToDelete = MutableStateFlow<Product?>(null)
+       private val _productToDelete = MutableStateFlow<Product?>(null)
     val productToDelete: StateFlow<Product?> = _productToDelete
 
     private val _productToEdit = MutableStateFlow<Product?>(null)

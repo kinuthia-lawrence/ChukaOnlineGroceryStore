@@ -23,30 +23,41 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import com.example.chukaonlinegrocerystore.enums.ProductCategory
 import com.example.chukaonlinegrocerystore.ui.ProductItem
+import com.example.chukaonlinegrocerystore.viewmodel.BuyerViewModel
 
 @Composable
 fun BuyerDashboard(
     navController: NavHostController,
-    cartViewModel: CartViewModel = viewModel()
+    cartViewModel: CartViewModel = viewModel(),
+    buyerViewModel: BuyerViewModel = viewModel()
 ) {
+    /*TODO
+   * Include Image in sellers
+   * Show products in Buyers
+   * */
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<ProductCategory?>(null) }
 
-    // Sample product list
-    val products = listOf(
+    LaunchedEffect(Unit) {
+        buyerViewModel.fetchProducts()
+    }
+
+    val products by buyerViewModel.buyerProducts.collectAsState()
+//    // Sample product list
+/*    val products = listOf(
         Product("1", "Apple", 1.99, ProductCategory.FRUITS, 5, R.drawable.apple),
         Product("2", "Banana", 0.99, ProductCategory.FRUITS, 5, R.drawable.banana),
         Product("3", "Carrot", 1.49, ProductCategory.VEGETABLES, 5, R.drawable.carrot),
         Product("4", "Milk", 2.49, ProductCategory.DAIRY, 5, R.drawable.milk),
         Product("5", "Juice", 3.99, ProductCategory.BEVERAGES, 5, R.drawable.juice)
-    )
+    )*/
+
 
     // Filter logic
     val filteredProducts = products.filter { product ->
         (selectedCategory == null || product.category == selectedCategory) &&
                 (searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true))
     }
-
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
