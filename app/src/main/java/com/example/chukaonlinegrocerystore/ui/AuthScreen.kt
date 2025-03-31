@@ -52,7 +52,7 @@ fun AuthScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color.Green),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = if (showSplash && !showAuthOptions) Arrangement.Center else Arrangement.Top
     ) {
