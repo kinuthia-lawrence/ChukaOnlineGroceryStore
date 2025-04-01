@@ -1,20 +1,37 @@
 package com.example.chukaonlinegrocerystore.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,13 +74,19 @@ fun AuthScreen(navController: NavController) {
         verticalArrangement = if (showSplash && !showAuthOptions) Arrangement.Center else Arrangement.Top
     ) {
         // Splash content that stays
-        Spacer(modifier = Modifier.height(if (showAuthOptions) 60.dp else 0.dp))
-
+        Spacer(
+            modifier = Modifier.height(
+                when {
+                    showAuthOptions -> (0.20f * LocalConfiguration.current.screenHeightDp).dp
+                    else -> 0.dp
+                }
+            )
+        )
         Image(
             painter = painterResource(id = R.drawable.groceries),
             contentDescription = "Grocery Store Logo",
             modifier = Modifier
-                .size((120 * logoScale).dp)
+                .size((150 * logoScale).dp)
                 .alpha(logoAlpha.value)
         )
 
@@ -71,9 +94,9 @@ fun AuthScreen(navController: NavController) {
 
         Text(
             text = "Chuka Online Grocery Store",
-            fontSize = if (showAuthOptions) 22.sp else 28.sp,
+            fontSize = if (showAuthOptions) 30.sp else 32.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            color = Color.White,
             textAlign = TextAlign.Center,
             lineHeight = 32.sp,
             modifier = Modifier.alpha(logoAlpha.value)
@@ -94,8 +117,8 @@ fun AuthScreen(navController: NavController) {
                     Text(
                         text = "Continue as",
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
                         style = MaterialTheme.typography.headlineMedium
                     )
 
@@ -107,9 +130,17 @@ fun AuthScreen(navController: NavController) {
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Green
+                        )
                     ) {
-                        Text(text = "Buyer", color = Color.White)
+                        Text(
+                            text = "Buyer",
+                            color = Color.Green,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 28.sp
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -120,9 +151,17 @@ fun AuthScreen(navController: NavController) {
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Green
+                        )
                     ) {
-                        Text(text = "Seller", color = Color.White)
+                        Text(
+                            text = "Seller",
+                            color = Color.Green,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
                     }
                 }
             }
