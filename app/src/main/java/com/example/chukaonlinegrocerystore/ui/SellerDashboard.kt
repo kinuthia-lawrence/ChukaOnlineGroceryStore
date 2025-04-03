@@ -236,17 +236,49 @@ fun SellerDashboard(
                         .align(Alignment.CenterHorizontally),
                     contentAlignment = Alignment.Center
                 ) {
-                    bitmap?.let {
+                    val productBeingEdited = productToEdit
+
+                    val localBitmap = bitmap
+                    if (localBitmap != null) {
+                        // Show newly selected image if available
                         Image(
-                            bitmap = it.asImageBitmap(),
+                            bitmap = localBitmap.asImageBitmap(),
                             contentDescription = "Product Image",
                             modifier = Modifier.fillMaxHeight()
                         )
-                    } ?: Image(
-                        painter = painterResource(id = R.drawable.groceries),
-                        contentDescription = "Default Image",
-                        modifier = Modifier.size(100.dp)
-                    )
+                    } else if (productBeingEdited != null && productBeingEdited.imageUrl.isNotEmpty()) {
+                        // Show existing Base64 image when editing
+                        val existingBitmap = remember(productBeingEdited.imageUrl) {
+                            try {
+                                val imageBytes =
+                                    Base64.decode(productBeingEdited.imageUrl, Base64.DEFAULT)
+                                BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+
+                        if (existingBitmap != null) {
+                            Image(
+                                bitmap = existingBitmap.asImageBitmap(),
+                                contentDescription = "Product Image",
+                                modifier = Modifier.fillMaxHeight()
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.groceries),
+                                contentDescription = "Default Image",
+                                modifier = Modifier.size(100.dp)
+                            )
+                        }
+                    } else {
+                        // Default image when no image available
+                        Image(
+                            painter = painterResource(id = R.drawable.groceries),
+                            contentDescription = "Default Image",
+                            modifier = Modifier.size(100.dp)
+                        )
+                    }
                 }
 
                 Button(
