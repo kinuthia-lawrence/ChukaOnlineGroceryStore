@@ -1,37 +1,40 @@
 package com.example.chukaonlinegrocerystore.viewmodel
 
 import android.content.Context
+import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.chukaonlinegrocerystore.enums.ProductCategory
+import com.example.chukaonlinegrocerystore.model.Product
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.example.chukaonlinegrocerystore.model.Product
-import com.example.chukaonlinegrocerystore.ui.ProductItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 data class SellerUiState(
     val productName: String = "",
     val productPrice: String = "",
     var productCategory: ProductCategory = ProductCategory.FRUITS,
     val productQuantity: String = "",
-    val sellerProducts: List<Product> = emptyList()
+    val sellerProducts: List<Product> = emptyList(),
+    val productImageUri: Uri? = null
 )
 
 class SellerViewModel : ViewModel() {
-       private val _productToDelete = MutableStateFlow<Product?>(null)
+    private val _productToDelete = MutableStateFlow<Product?>(null)
     val productToDelete: StateFlow<Product?> = _productToDelete
 
     private val _productToEdit = MutableStateFlow<Product?>(null)
     val productToEdit: StateFlow<Product?> = _productToEdit
+
+    private val currentSellerId: String
+        get() = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     fun setProductToDelete(product: Product?) {
         _productToDelete.value = product
@@ -40,6 +43,7 @@ class SellerViewModel : ViewModel() {
     fun setProductToEdit(product: Product?) {
         _productToEdit.value = product
     }
+
 
     private val _uiState = MutableStateFlow(SellerUiState())
     val uiState: StateFlow<SellerUiState> = _uiState
@@ -77,20 +81,25 @@ class SellerViewModel : ViewModel() {
         }
     }
 
+    //? Updates the UI state when the product name changes.
     fun onProductNameChanged(name: String) {
         _uiState.update { it.copy(productName = name) }
     }
 
-    fun onProductPriceChanged(price: String) {
-        _uiState.update { it.copy(productPrice = price) }
+    fun onProductPriceChanged(price: Double) {
+        _uiState.update { it.copy(productPrice = price.toString()) }
     }
 
     fun onProductCategoryChanged(category: ProductCategory) {
         _uiState.update { it.copy(productCategory = category) }
     }
 
-    fun onProductQuantityChanged(quantity: String) {
-        _uiState.update { it.copy(productQuantity = quantity) }
+    fun onProductQuantityChanged(quantity: Int) {
+        _uiState.update { it.copy(productQuantity = quantity.toString()) }
+    }
+
+    fun onProductImageSelected(uri: Uri?) {
+        _uiState.update { it.copy(productImageUri = uri) }
     }
 
     fun clearFields() {
@@ -99,26 +108,31 @@ class SellerViewModel : ViewModel() {
                 productName = "",
                 productPrice = "",
                 productCategory = ProductCategory.FRUITS,
-                productQuantity = ""
+                productQuantity = "",
+                productImageUri = null
             )
         }
     }
 
     // Adds a new product to the seller's inventory in Firestore.
     // In production, you should add error handling and input validation.
-    suspend fun addProduct(imageUrl: String?, context: Context) {
+    suspend fun addProduct(context: Context) {
         val name = _uiState.value.productName
         val price = _uiState.value.productPrice.toDoubleOrNull() ?: 0.0
         val category = _uiState.value.productCategory
         val quantity = _uiState.value.productQuantity.toIntOrNull() ?: 0
+        val imageUri = _uiState.value.productImageUri
 
         if (sellerUid == null) return
 
+        val imageUrl = imageUri?.let { convertImageToBase64(context, it) } ?: ""
         val productData = mapOf(
             "name" to name,
             "price" to price,
             "category" to category,
-            "quantity" to quantity
+            "quantity" to quantity,
+            "SellerId" to currentSellerId,
+            "imageUrl" to imageUrl
         )
 
         firestore.collection("sellers")
@@ -136,14 +150,21 @@ class SellerViewModel : ViewModel() {
         val price = _uiState.value.productPrice.toDoubleOrNull() ?: 0.0
         val category = _uiState.value.productCategory
         val quantity = _uiState.value.productQuantity.toIntOrNull() ?: 0
+        val sellerId = if (product.SellerId.isEmpty()) currentSellerId else product.SellerId
+        val imageUri = _uiState.value.productImageUri
 
         if (sellerUid == null) return
+
+        val imageUrl = imageUri?.let { convertImageToBase64(context, it) } ?: product.imageUrl ?: ""
+
 
         val productData = mapOf(
             "name" to name,
             "price" to price,
             "category" to category,
-            "quantity" to quantity
+            "quantity" to quantity,
+            "SellerId" to sellerId,
+            "imageUrl" to imageUrl
         )
 
         firestore.collection("sellers")
@@ -157,6 +178,46 @@ class SellerViewModel : ViewModel() {
         Toast.makeText(context, "Product updated successfully", Toast.LENGTH_SHORT).show()
         setProductToEdit(null)
     }
+
+    private suspend fun convertImageToBase64(context: Context, imageUri: Uri): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(imageUri)
+                val bytes = inputStream?.readBytes() ?: ByteArray(0)
+                inputStream?.close()
+                Base64.encodeToString(bytes, Base64.DEFAULT)
+            } catch (e: Exception) {
+                Log.e("SellerViewModel", "Base64 conversion failed", e)
+                ""
+            }
+        }
+    }
+    /*// Add image upload function
+    private suspend fun uploadProductImage(imageUri: Uri): String {
+        Log.d("SellerViewModel", "Starting image upload process with URI: $imageUri")
+
+        return try {
+            val storage = FirebaseStorage.getInstance()
+            val fileName = UUID.randomUUID().toString()
+            val storageRef = storage.reference
+            val imageRef = storageRef.child("product_images/$sellerUid/$fileName")
+
+            // Upload file and wait for completion
+            val uploadTask = imageRef.putFile(imageUri)
+            val taskSnapshot = uploadTask.await()
+            Log.d("SellerViewModel", "Upload completed, bytes: ${taskSnapshot.bytesTransferred}")
+
+            // Get download URL through task - this is the key part
+            val downloadUrlTask = imageRef.downloadUrl
+            val url = downloadUrlTask.await().toString()
+
+            Log.d("SellerViewModel", "Download URL retrieved: $url")
+            url
+        } catch (e: Exception) {
+            Log.e("SellerViewModel", "Upload failed with exception:", e)
+            ""
+        }
+    }*/
 
     // Deletes a product from the seller's inventory.
     suspend fun deleteProduct(product: Product) {

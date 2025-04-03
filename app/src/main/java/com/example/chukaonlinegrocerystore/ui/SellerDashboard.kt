@@ -1,12 +1,24 @@
 package com.example.chukaonlinegrocerystore.ui
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,8 +28,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -47,18 +62,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontVariation.width
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.chukaonlinegrocerystore.R
 import com.example.chukaonlinegrocerystore.enums.ProductCategory
 import com.example.chukaonlinegrocerystore.model.Product
+import com.example.chukaonlinegrocerystore.ui.theme.lightBrown
+import com.example.chukaonlinegrocerystore.ui.theme.lightGray
 import com.example.chukaonlinegrocerystore.viewmodel.SellerViewModel
 import kotlinx.coroutines.launch
 
@@ -155,10 +176,18 @@ fun SellerDashboard(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = uiState.productPrice,
-                    onValueChange = { sellerViewModel.onProductPriceChanged(it) },
+                    onValueChange = { newValue ->
+                        // Only accept valid decimal inputs
+                        if (newValue.isEmpty() || newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            // Convert to Double (or 0.0 if invalid/empty)
+                            val doubleValue = newValue.toDoubleOrNull() ?: 0.0
+                            sellerViewModel.onProductPriceChanged(doubleValue)
+                        }
+                    },
                     label = { Text("Price") },
                     shape = RoundedCornerShape(30),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 CategoryDropdown(
@@ -168,12 +197,66 @@ fun SellerDashboard(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = uiState.productQuantity,
-                    onValueChange = { sellerViewModel.onProductQuantityChanged(it) },
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                            val intValue = newValue.toIntOrNull() ?: 0
+                            sellerViewModel.onProductQuantityChanged(intValue)
+                        }
+                    },
                     label = { Text("Quantity") },
                     shape = RoundedCornerShape(30),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                val context = LocalContext.current
+                var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri: Uri? ->
+                    uri?.let {
+                        sellerViewModel.onProductImageSelected(it)
+                        // Display preview
+                        bitmap = if (Build.VERSION.SDK_INT < 28) {
+                            MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+                        } else {
+                            val source = ImageDecoder.createSource(context.contentResolver, it)
+                            ImageDecoder.decodeBitmap(source)
+                        }
+                    }
+                }
+
+                // Image preview
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .padding(vertical = 8.dp)
+                        .align(Alignment.CenterHorizontally),
+                    contentAlignment = Alignment.Center
+                ) {
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = "Product Image",
+                            modifier = Modifier.fillMaxHeight()
+                        )
+                    } ?: Image(
+                        painter = painterResource(id = R.drawable.groceries),
+                        contentDescription = "Default Image",
+                        modifier = Modifier.size(100.dp)
+                    )
+                }
+
+                Button(
+                    onClick = { launcher.launch("image/*") },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Pick Product Image")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -182,9 +265,8 @@ fun SellerDashboard(
                             productToEdit?.let { product ->
                                 sellerViewModel.updateProduct(product, context)
                             } ?: sellerViewModel.addProduct(
-                                null,
                                 context
-                            ) // Add new product if null
+                            )
                         }
                     }, modifier = Modifier.weight(1f)) {
                         Text(text = if (productToEdit == null) "Add" else "Update")
@@ -197,7 +279,6 @@ fun SellerDashboard(
                     }
                 }
             }
-
         }
     }
     //Delete Confirm Dialog
@@ -299,40 +380,122 @@ fun SellerProductItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 4.dp, horizontal = 3.dp)
+            .border(
+                width = 1.dp,
+                color = Color.Black.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp)
+            ),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = lightGray
+        )
     ) {
         Row(
             modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Product Image
-            Image(
-                painter = painterResource(id = product.imageResId.takeIf { it != 0 } ?: R.drawable.groceries),
-                contentDescription = product.name,
-                modifier = Modifier.size(64.dp)
-            )
+            // Product Image - with Base64 support
+            if (product.imageUrl.isNotEmpty()) {
+                // If we have a Base64 image string, decode and display it
+                val bitmap = remember(product.imageUrl) {
+                    try {
+                        val imageBytes = Base64.decode(product.imageUrl, Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = product.name,
+                        modifier = Modifier.size(64.dp)
+                    )
+                } else {
+                    // Fallback if decoding fails
+                    Image(
+                        painter = painterResource(id = R.drawable.groceries),
+                        contentDescription = product.name,
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
+            } else {
+                // Fallback for no image
+                Image(
+                    painter = painterResource(id = product.imageResId.takeIf { it != 0 }
+                        ?: R.drawable.groceries),
+                    contentDescription = product.name,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier
-                .weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+            ) {
                 Text(
                     text = product.name,
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Text(
                     text = "Price: Ksh ${product.price} | Qty: ${product.quantity}",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 12.sp
                 )
                 Text(
                     text = "Category: ${product.category}",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onEditClick) {
-                        Text("Edit")
+            }
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = onEditClick,
+                    modifier = Modifier.height(28.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            "Edit",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    OutlinedButton(onClick = onDeleteClick) {
-                        Text("Delete")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.height(28.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            "Delete",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

@@ -73,11 +73,11 @@ dependencies {
     // Firebase BOM (manages versions for Firebase libraries)
     implementation(platform(libs.firebase.bom))
 
-    // Firebase dependencies (example)
+    // Firebase dependencies
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.androidx.material3.android)
-    // Add more (e.g., firebase-storage-ktx) as needed
+    implementation(libs.firebase.storage)
 
     // Test Dependencies
     testImplementation(libs.junit)
