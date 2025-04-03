@@ -230,7 +230,7 @@ fun CartScreen(
                         )
 
                         Text(
-                            text = "Inventory quantities will be updated after payment",
+                            text = "Thanks for shopping with Chuka online Grocery",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
