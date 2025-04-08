@@ -6,16 +6,23 @@ import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.chukaonlinegrocerystore.enums.ProductCategory
 import com.example.chukaonlinegrocerystore.model.Product
+import com.example.chukaonlinegrocerystore.model.Sale
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 data class SellerUiState(
     val productName: String = "",
@@ -25,6 +32,18 @@ data class SellerUiState(
     val sellerProducts: List<Product> = emptyList(),
     val productImageUri: Uri? = null
 )
+
+data class SalesReport(
+    val dailySales: List<DailySales> = emptyList(),
+    val weeklySales: List<WeeklySales> = emptyList(),
+    val monthlySales: List<MonthlySales> = emptyList(),
+    val totalSales: Double = 0.0,
+    val totalItems: Int = 0
+)
+
+data class DailySales(val day: String, val amount: Double, val items: Int)
+data class WeeklySales(val week: String, val amount: Double, val items: Int)
+data class MonthlySales(val month: String, val amount: Double, val items: Int)
 
 class SellerViewModel : ViewModel() {
     private val _productToDelete = MutableStateFlow<Product?>(null)
@@ -52,6 +71,13 @@ class SellerViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
 
     private val sellerUid: String? = auth.currentUser?.uid
+
+    //sales history and reports
+    private val _salesHistory = MutableStateFlow<List<Sale>>(emptyList())
+    val salesHistory: StateFlow<List<Sale>> = _salesHistory
+
+    private val _salesReport = MutableStateFlow(SalesReport())
+    val salesReport: StateFlow<SalesReport> = _salesReport
 
     init {
         observeSellerInventory()
@@ -238,6 +264,93 @@ class SellerViewModel : ViewModel() {
                 productPrice = product.price.toString(),
                 productCategory = product.category,
                 productQuantity = product.quantity.toString()
+            )
+        }
+    }
+
+    // Fetches the sales history for the current seller.
+    fun fetchSalesData() {
+        sellerUid?.let { sellerId ->
+            firestore.collection("sellers")
+                .document(sellerId)
+                .collection("sales")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e("SellerViewModel", "Error fetching sales data", error)
+                        return@addSnapshotListener
+                    }
+
+                    snapshot?.let { querySnapshot ->
+                        val sales = querySnapshot.documents.mapNotNull { doc ->
+                            doc.toObject(Sale::class.java)?.copy(id = doc.id)
+                        }
+                        _salesHistory.value = sales
+                        generateReports(sales)
+                    }
+                }
+        }
+    }
+
+    private fun generateReports(sales: List<Sale>) {
+        viewModelScope.launch {
+            val calendar = Calendar.getInstance()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val monthFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+            val weekFormat = SimpleDateFormat("'Week' W, yyyy", Locale.getDefault())
+
+            // Group by date
+            val dailyMap = mutableMapOf<String, Pair<Double, Int>>()
+            val weeklyMap = mutableMapOf<String, Pair<Double, Int>>()
+            val monthlyMap = mutableMapOf<String, Pair<Double, Int>>()
+
+            var totalAmount = 0.0
+            var totalItems = 0
+
+            sales.forEach { sale ->
+                calendar.time = sale.date
+                val dateStr = dateFormat.format(calendar.time)
+                val weekStr = weekFormat.format(calendar.time)
+                val monthStr = monthFormat.format(calendar.time)
+
+                // Daily aggregation
+                dailyMap[dateStr] = dailyMap.getOrDefault(dateStr, Pair(0.0, 0)).let {
+                    Pair(it.first + sale.totalAmount, it.second + sale.quantity)
+                }
+
+                // Weekly aggregation
+                weeklyMap[weekStr] = weeklyMap.getOrDefault(weekStr, Pair(0.0, 0)).let {
+                    Pair(it.first + sale.totalAmount, it.second + sale.quantity)
+                }
+
+                // Monthly aggregation
+                monthlyMap[monthStr] = monthlyMap.getOrDefault(monthStr, Pair(0.0, 0)).let {
+                    Pair(it.first + sale.totalAmount, it.second + sale.quantity)
+                }
+
+                totalAmount += sale.totalAmount
+                totalItems += sale.quantity
+            }
+
+            // Convert to lists sorted by date
+            val dailySalesList = dailyMap.map { (day, values) ->
+                DailySales(day, values.first, values.second)
+            }.sortedByDescending { it.day }
+
+            val weeklySalesList = weeklyMap.map { (week, values) ->
+                WeeklySales(week, values.first, values.second)
+            }.sortedByDescending { it.week }
+
+            val monthlySalesList = monthlyMap.map { (month, values) ->
+                MonthlySales(month, values.first, values.second)
+            }.sortedByDescending { it.month }
+
+            _salesReport.value = SalesReport(
+                dailySales = dailySalesList,
+                weeklySales = weeklySalesList,
+                monthlySales = monthlySalesList,
+                totalSales = totalAmount,
+                totalItems = totalItems
             )
         }
     }

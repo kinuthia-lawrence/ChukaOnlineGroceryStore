@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chukaonlinegrocerystore.model.Product
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Calendar
+import kotlin.random.Random
 
 class CartViewModel : ViewModel() {
     private val _cartItems = MutableStateFlow<Map<String, CartItem>>(emptyMap())
@@ -92,7 +95,8 @@ class CartViewModel : ViewModel() {
         }
     }
 
-    fun checkout() {
+    // In CartViewModel.kt - Update the checkout() method
+    fun checkout(buyerPhone: String = "") {
         viewModelScope.launch {
             _checkoutState.value = CheckoutState.Loading
             try {
@@ -103,30 +107,123 @@ class CartViewModel : ViewModel() {
                 _cartItems.value.forEach { (_, cartItem) ->
                     val product = cartItem.product
                     val quantity = cartItem.quantity
+                    val totalAmount = product.price * quantity
 
-                    // Find the seller's product document
+                    // Update inventory quantity
                     val productRef = db.collection("sellers")
                         .document(product.SellerId)
                         .collection("inventory")
                         .document(product.id)
 
-                    // Update quantity (ensure it never goes below 0)
-                    batch.update(
-                        productRef,
-                        "quantity",
-                        FieldValue.increment(-quantity.toLong())
+                    batch.update(productRef, "quantity", FieldValue.increment(-quantity.toLong()))
+
+                    // Record the sale in seller's sales collection
+                    val saleData = hashMapOf(
+                        "productId" to product.id,
+                        "productName" to product.name,
+                        "quantity" to quantity,
+                        "price" to product.price,
+                        "totalAmount" to totalAmount,
+                        "buyerPhone" to buyerPhone,
+                        "timestamp" to FieldValue.serverTimestamp(),
+                        "sellerId" to product.SellerId
                     )
+
+                    val saleRef = db.collection("sellers")
+                        .document(product.SellerId)
+                        .collection("sales")
+                        .document()
+
+                    batch.set(saleRef, saleData)
                 }
 
                 // Execute all updates atomically
                 batch.commit().await()
-
-                // Clear cart after successful checkout
                 clearCart()
                 _checkoutState.value = CheckoutState.Success
             } catch (e: Exception) {
                 Log.e("CartViewModel", "Checkout failed", e)
                 _checkoutState.value = CheckoutState.Error(e.message ?: "Checkout failed")
+            }
+        }
+    }
+
+
+    fun insertDummySalesData() {
+        // Launch a coroutine to perform Firestore operations.
+        viewModelScope.launch {
+            val firestore = FirebaseFirestore.getInstance()
+            val sellerID = "M9D26AAUz9fcWDX6XYUxFGNebX52"
+            val salesCollection =
+                firestore.collection("sellers").document(sellerID).collection("sales")
+
+            // Sample product data
+            val products = listOf(
+                Triple("Apples", 85.0, "Product1"),
+                Triple("Bananas", 65.0, "Product2"),
+                Triple("Oranges", 120.0, "Product3"),
+                Triple("Milk", 150.0, "Product4"),
+                Triple("Bread", 95.0, "Product5"),
+                Triple("Tomatoes", 75.0, "Product6"),
+                Triple("Potatoes", 150.0, "Product7"),
+                Triple("Spinach", 45.0, "Product8")
+            )
+
+            // Phone numbers for buyers
+            val phoneNumbers = listOf("0712345678", "0723456789", "0734567890", "0745678901")
+
+            // Generate sales over the past 60 days
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, -60) // Start 60 days ago
+
+            var batch = firestore.batch()
+            var count = 0
+
+            try {
+                // Create 100 random sales spread over 60 days
+                repeat(100) {
+                    // Random product
+                    val (productName, price, productId) = products.random()
+
+                    // Random date within the past 60 days
+                    calendar.add(Calendar.DAY_OF_YEAR, Random.nextInt(0, 3))
+                    calendar.add(Calendar.HOUR_OF_DAY, Random.nextInt(8, 20))
+                    calendar.add(Calendar.MINUTE, Random.nextInt(0, 60))
+
+                    val timestamp = Timestamp(calendar.time)
+                    val quantity = Random.nextInt(1, 6)
+                    val totalAmount = price * quantity
+                    val buyerPhone = phoneNumbers.random()
+
+                    val sale = hashMapOf(
+                        "productId" to productId,
+                        "productName" to productName,
+                        "quantity" to quantity,
+                        "price" to price,
+                        "totalAmount" to totalAmount,
+                        "buyerPhone" to buyerPhone,
+                        "timestamp" to timestamp,
+                        "sellerId" to sellerID
+                    )
+
+                    val document = salesCollection.document()
+                    batch.set(document, sale)
+
+                    count++
+
+                    // Commit in batches of 20
+                    if (count % 20 == 0) {
+                        batch.commit().await()
+                        batch = firestore.batch() // Create a new batch after committing
+                    }
+                }
+
+                // Commit any remaining documents
+                batch.commit().await()
+
+                Log.d("CartViewModel", "Successfully inserted dummy sales data")
+            } catch (e: Exception) {
+                Log.e("CartViewModel", "Error inserting dummy sales data", e)
             }
         }
     }
